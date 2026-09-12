@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-vindbaarheid pre-check — test</title>
+<style>
+  :root {
+    --navy:#2D3A4A;
+    --rust:#B87320;
+    --rood:#C0392B;
+    --oranje:#E67E22;
+    --groen:#27AE60;
+    --groen-donker:#3D6B4A;
+    --bg:#F5F5F0;
+    --grijs:#E0E0D8;
+    --tekst:#1A1A18;
+    --tekst-muted:#5B534B;
+    --label:#4A5562;
+  }
+  * { box-sizing: border-box; }
+  html { background:#EAE6DB; }
+  body {
+    margin:0; background:transparent; color:var(--tekst);
+    font-family:Arial, Helvetica, sans-serif; line-height:1.6; font-size:13.5px;
+  }
+  h1, h2, .headline-font { font-family:Georgia, 'Times New Roman', serif; }
+
+  /* Vaste, smalle documentkolom die het scherm niet vult: topbar, scoreband
+     en body zitten allemaal binnen dezelfde breedte, met één dun lijntje
+     links en rechts dat de hele pagina naar beneden doorloopt. */
+  .document {
+    max-width:680px; margin:0 auto; background:var(--bg);
+    border-left:1px solid #D8D2C2; border-right:1px solid #D8D2C2;
+  }
+
+  .topbar {
+    background:var(--navy); color:#fff; padding:16px 32px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .topbar-logo { font-family:Georgia, serif; font-weight:bold; font-size:16px; display:flex; align-items:center; gap:10px; }
+  .topbar-logo .dot { color:var(--rust); }
+  .topbar-logo .sep { opacity:.4; font-weight:normal; }
+  .topbar-logo .naam { font-weight:normal; font-size:15px; }
+  .topbar-right { text-align:right; }
+  .topbar-doctype {
+    font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:rgba(255,255,255,0.55); white-space:nowrap;
+  }
+  .topbar-datum { font-size:12px; color:rgba(255,255,255,0.75); margin-top:3px; }
+
+  .wrap { padding:0 0 56px; }
+
+  .score-band {
+    background:var(--rust); color:#fff; padding:24px 32px;
+    display:flex; align-items:center; gap:22px; flex-wrap:wrap;
+  }
+  .score-badge-col { flex:none; display:flex; flex-direction:column; align-items:center; }
+  .score-badge {
+    width:88px; height:88px; border-radius:50%; background:rgba(0,0,0,0.15);
+    border:2px solid rgba(255,255,255,0.25); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; color:#fff;
+  }
+  .score-badge .num { font-family:Georgia, serif; font-weight:bold; font-size:22px; line-height:1; color:#fff; }
+  .score-badge .max { font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,0.75); margin-top:3px; }
+
+  .urgentie { display:flex; gap:3px; margin-top:10px; width:88px; }
+  .urgentie span { height:5px; border-radius:3px; }
+  .urgentie .r { background:var(--rood); flex:3; }
+  .urgentie .o { background:var(--oranje); flex:2; }
+  .urgentie .g { background:var(--groen); flex:2; }
+  .urgentie-labels { display:flex; justify-content:space-between; width:88px; margin-top:4px; }
+  .urgentie-labels span { font-size:8px; color:rgba(255,255,255,0.6); }
+
+  .score-text { flex:1; min-width:200px; }
+  .score-text h1 { font-size:18px; margin:0 0 6px; color:#fff; }
+  .score-text p { margin:0; font-size:13px; color:rgba(255,255,255,0.92); }
+
+  .capped-note { padding:10px 32px; background:#fceee6; color:var(--rood); font-size:12px; font-weight:bold; }
+
+  .ai-rij {
+    padding:16px 32px; display:flex; justify-content:space-between; align-items:center; gap:16px;
+    flex-wrap:wrap; border-bottom:1px solid var(--grijs);
+  }
+  .ai-rij .label { font-size:13px; }
+
+  .sectie-titel {
+    font-size:15px; margin:28px 0 16px; padding:0 32px; color:var(--navy);
+  }
+
+  .pijler { padding:0 32px 16px; border-bottom:1px solid var(--grijs); margin:0 0 16px; }
+  .pijler:last-child { border-bottom:none; margin-bottom:0; }
+  .pijler-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; gap:10px; flex-wrap:wrap; }
+  .pijler-naam { font-size:11px; letter-spacing:.09em; text-transform:uppercase; font-weight:bold; color:var(--label); opacity:.9; }
+
+  .status { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:bold; white-space:nowrap; }
+  .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .st-sterk .status-dot, .st-goed .status-dot { background:var(--groen-donker); }
+  .st-sterk, .st-goed { color:var(--groen-donker); }
+  .st-aandacht .status-dot { background:var(--rust); }
+  .st-aandacht { color:var(--rust); }
+  .st-zwak .status-dot { background:var(--rood); }
+  .st-zwak { color:var(--rood); }
+  .st-onbekend .status-dot { background:#a3a39c; }
+  .st-onbekend { color:var(--tekst-muted); }
+
+  .balk-wrap { height:5px; background:var(--grijs); border-radius:3px; margin-bottom:9px; overflow:hidden; }
+  .balk { height:100%; border-radius:3px; }
+  .balk.st-sterk, .balk.st-goed { background:var(--groen-donker); }
+  .balk.st-aandacht { background:var(--rust); }
+  .balk.st-zwak { background:var(--rood); }
+  .balk.st-onbekend { background:#a3a39c; }
+
+  .bevinding { padding:8px 12px; font-size:12.5px; line-height:1.6; }
+  .bevinding p { margin:0; }
+  .bevinding p + p { margin-top:5px; }
+  .bevinding.st-sterk, .bevinding.st-goed { background:#eef2ec; border-left:3px solid var(--groen-donker); color:#2a4230; }
+  .bevinding.st-aandacht { background:#fdf2e4; border-left:3px solid var(--rust); color:#5a3f18; }
+  .bevinding.st-zwak { background:#fbe9e6; border-left:3px solid var(--rood); color:#5c231b; }
+  .bevinding.st-onbekend { background:#ececeb; border-left:3px solid #a3a39c; color:var(--tekst-muted); }
+
+  .priority-box { margin:20px 32px 0; padding:14px 16px; background:#fdf2e4; border-left:3px solid var(--rust); }
+  .priority-label { font-size:10.5px; letter-spacing:.08em; font-weight:bold; color:var(--rust); margin:0 0 6px; }
+  .priority-text { margin:0 0 6px; font-size:13px; color:var(--tekst); }
+  .priority-caption { margin:0; font-size:10.5px; letter-spacing:.03em; color:var(--tekst-muted); text-transform:uppercase; }
+
+  .cta { text-align:center; padding:28px 32px 0; }
+  .cta p { color:var(--tekst); margin:0 0 14px; font-size:14.5px; }
+  .btn {
+    display:inline-block; width:100%; max-width:420px; padding:14px 26px; background:var(--rust); color:#fff;
+    text-decoration:none; font-weight:bold; border-radius:6px; font-size:14.5px;
+  }
+  .btn:hover { background:#9c611b; }
+
+  .footnote { margin-top:24px; padding:0 32px; font-size:11px; color:var(--tekst-muted); text-align:center; }
+
+  @media (max-width: 480px) {
+    .topbar { padding:14px 18px; }
+    .score-band { padding:20px 18px; }
+    .pijler, .sectie-titel, .ai-rij, .cta, .footnote { padding-left:18px; padding-right:18px; }
+    .priority-box { margin-left:18px; margin-right:18px; }
+  }
+</style>
+</head>
+<body>
+  <div class="document">
+  <div class="topbar">
+      <div class="topbar-logo">
+        <span>Ai<span class="dot">.</span>gekozen</span>
+        <span class="sep">|</span><span class="naam">test, Rotterdam</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-doctype">AI-vindbaarheid pre-check</div>
+        <div class="topbar-datum">12 september 2026</div>
+      </div>
+    </div>
+
+  <div class="score-band">
+    <div class="score-badge-col">
+      <div class="score-badge">
+        <div class="num">44/59</div>
+        <div class="max">VAN 100</div>
+      </div>
+      <div class="urgentie"><span class="r"></span><span class="o"></span><span class="g"></span></div>
+      <div class="urgentie-labels"><span>0</span><span>60</span><span>80</span><span>100</span></div>
+    </div>
+    <div class="score-text">
+      <h1>Redelijke basis, ruimte voor groei</h1>
+      <p>Een aantal fundamenten staat, maar belangrijke onderdelen missen nog om structureel als bron te worden aangehaald door AI-chatbots.</p>
+    </div>
+  </div>
+  
+
+  <div class="wrap">
+    <div class="ai-rij">
+      <span class="label">Genoemd door een AI-chatbot bij "AI governance training voor het MKB"</span>
+      <span class="status st-zwak"><span class="status-dot"></span>Nee</span>
+    </div>
+
+    <h2 class="sectie-titel">Score per onderdeel</h2>
+    
+    <div class="pijler">
+      <div class="pijler-head">
+        <span class="pijler-naam">Websitebasis & doorklikbare AI-bron</span>
+        <span class="status st-sterk"><span class="status-dot"></span>STERK</span>
+      </div>
+      <div class="balk-wrap"><div class="balk st-sterk" style="width:100%"></div></div>
+      <div class="bevinding st-sterk"><p>Website bereikbaar met titel en metabeschrijving (actieve website/merkhub)</p></div>
+    </div>
+    <div class="pijler">
+      <div class="pijler-head">
+        <span class="pijler-naam">Merk-entiteit & bedrijfsidentiteit</span>
+        <span class="status st-aandacht"><span class="status-dot"></span>AANDACHT</span>
+      </div>
+      <div class="balk-wrap"><div class="balk st-aandacht" style="width:50%"></div></div>
+      <div class="bevinding st-aandacht"><p>Bedrijfsnaam consistent terug te vinden in titel/metadata</p></div>
+    </div>
+    <div class="pijler">
+      <div class="pijler-head">
+        <span class="pijler-naam">Non-commodity content & expertisebewijs</span>
+        <span class="status st-onbekend"><span class="status-dot"></span>NIET GEMETEN</span>
+      </div>
+      <div class="balk-wrap"><div class="balk st-onbekend" style="width:0%"></div></div>
+      <div class="bevinding st-onbekend"><p>Niet gemeten in de light-check: kennisbank/expertisehub, bewijs van ervaring en klantcases vragen een inhoudelijke beoordeling van de content, dat gebeurt alleen in de volledige audit</p></div>
+    </div>
+    <div class="pijler">
+      <div class="pijler-head">
+        <span class="pijler-naam">Reputatie, autoriteit & klantbewijs</span>
+        <span class="status st-zwak"><span class="status-dot"></span>ZWAK</span>
+      </div>
+      <div class="balk-wrap"><div class="balk st-zwak" style="width:20%"></div></div>
+      <div class="bevinding st-zwak"><p>31 Google-reviews gevonden, gemiddeld 4.0</p><p>Autoriteits- en trustsignalen (certificeringen, lidmaatschappen, partnerships) zijn in de light-check niet gemeten</p></div>
+    </div>
+    <div class="pijler">
+      <div class="pijler-head">
+        <span class="pijler-naam">Actualiteit, conversie & agent readiness</span>
+        <span class="status st-goed"><span class="status-dot"></span>GOED</span>
+      </div>
+      <div class="balk-wrap"><div class="balk st-goed" style="width:70%"></div></div>
+      <div class="bevinding st-goed"><p>Copyright-jaartal in de voettekst komt overeen met het huidige jaar</p></div>
+    </div>
+    
+    <div class="priority-box">
+      <p class="priority-label">BELANGRIJKSTE PRIORITEIT</p>
+      <p class="priority-text">Zorg voor zichtbare reviews of testimonials en een KvK/btw-vermelding op de site, dat versterkt vertrouwen en transparantie.</p>
+      <p class="priority-caption">Onderdeel van de volledige GEO-audit</p>
+    </div>
+
+    <div class="cta">
+      <p>Wil je het exacte cijfer en de volledige toelichting per pijler? Dat is de basis voor een concreet uitvoeringsplan naar meer zichtbaarheid in AI-chatbots.</p>
+      <a class="btn" href="mailto:info@aigevonden.nl?subject=Aanvraag%20volledige%20AI-vindbaarheidsaudit%20-%20test&body=Bedrijfsnaam%3A%20test%0AWebsite%3A%20https%3A%2F%2Fwww.aigekozen.nl%0ABedrijfstype%3A%20Algemeen%20bedrijf%0APlaats%3A%20Rotterdam%0ACategorie%2Fsector%3A%20AI%20governance%20training%20voor%20het%20MKB%0AIndicatiescore%20light-check%3A%2044%2F59%20van%20de%20100%0AVia%20bureau%3A%20%28rechtstreeks%2C%20geen%20bureau-referral%29%0A%0AToelichting%20%2F%20vraag%20van%20de%20aanvrager%3A">Vraag de volledige audit aan</a>
+    </div>
+
+    <p class="footnote">Gebaseerd op de GEO scorecard algemene bedrijven. Geautomatiseerde eerste indicatie op basis van openbare gegevens van Google en de eigen website, geen volledige audit.</p>
+  </div>
+  </div>
+</body>
+</html>
